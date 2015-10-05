@@ -20,7 +20,7 @@ The parameters for the optimized linear model was as follows: TBD
 
 # Background Information
 ## What are Abalone?
-TBD
+Abalone are marine snails. Abalone shells have a low and open spiral structure, and are characterized by several respiratory holes in a row near the shell's outer edge. The innermost layer of the shell is composed of nacre or mother-of-pearl, which in many species is highly iridescent, giving rise to a range of strong and changeable colors which make them attractive to humans as a decorative object. [1]
 
 ## Why Model Rings
 TBD
