@@ -1,7 +1,7 @@
 ---
-title: "Predicting the Age of Abalone Through Regression Analysis"
+title: "Predicting Abalone Age Through Ridge Regression"
 author: "Michael Szczepaniak"
-date: "October, 2015"
+date: 'Original Release: February 2008 | Revised: November 2015'
 output:
   pdf_document:
     toc: yes
@@ -10,22 +10,62 @@ output:
     toc: yes
 ---
 
+```{r echo=FALSE, eval=FALSE}
+setwd("D:/dev/AbaloneRegression")
+```
+
+
 # Introduction
-A linear regression analysis was performed on a data set of characteristics related to the number of abalone rings using the R analysis package. These characteristics were: Sex (Male, Female, or Infant), Length, Diameter, Height, Whole weight, Shucked weight, Viscera weight, and Shell weight.
+There are a number of packages in R, Python, and other languages that can perform linear regression analysis (LRA) on a given dataset.  While the use of these packages saves a data scientist or analysis quite a bit of time, it is important to do these from scratch every now and then to reenforce the concepts behind this most fundamental of machine learning algorithms.  By doing so, we deepen our intuitions that allow us to make better use of the available tools.
 
-The independent variables (characteristics) were first standardized before a matrix of scatter plots were generated to get a high level understanding of the linear relationships between pairs of attributes. From here, we began constructing our linear model by randomly partitioning the data into training and test sets, calculated weights for the linear model for various ridge regression parameters ($\lambda$) and training partitions,
-identified the $\lambda$ that minimize root mean square error (RMSE) and then used the model to make some predictions.
+In this project, an LRA was performed on a dataset of characteristics (features) related to the number of abalone rings which was treated as the independent or response variable.  This analysis was performed in two ways.  First, it was done "from scratch" using nothing but base R language constructs such as matrix operations.  Second, the analysis is duplicate used the caret package.
 
-The parameters for the optimized linear model was as follows: TBD
+The analysis started with a quick exploratory data analyisis (EDA) which began with standardizing the indepependent variables (features) before constructing a matrix of scatter plots in order to again a high level understanding of the relationships between feature pairs. The features analyzed were: Sex (Male, Female, or Infant), Length, Diameter, Height, Whole weight, Shucked weight, Viscera weight, and Shell weight.
+
+Following the pairs plot, the construction of the linear model was initiated by randomly partitioning the data into training and test sets. Following the data partitioning, the coefficients for the linear model were calculated for various ridge regression parameters ($\lambda$) on the training set.  The $\lambda$ which minimized the root mean square error (RMSE) was determined and then used in the model to make some predictions.
+
+The parameters for the optimized linear model was as follows: [put table output here]
+
+The optimized ridge regression parameter $\lambda$ was found to be 0.8. The mean and the std dev columns above were used in the standardization which will be explained in detail later.
 
 # Background Information
 ## What are Abalone?
-Abalone are marine snails. Abalone shells have a low and open spiral structure, and are characterized by several respiratory holes in a row near the shell's outer edge. The innermost layer of the shell is composed of nacre or mother-of-pearl, which in many species is highly iridescent, giving rise to a range of strong and changeable colors which make them attractive to humans as a decorative object. [1]
+Abalone are marine snails. Abalone shells have a low and open spiral structure, and are characterized by several respiratory holes in a row near the shell's outer edge. The innermost layer of the shell is composed of nacre or mother-of-pearl, which in many species is highly iridescent, giving rise to a range of strong and changeable colors which make them attractive to humans as decorative objects [[1]](http://en.wikipedia.org/wiki/Abalone).
+
+The abalone of the Northwest's Puget Sound are a delicacy in Asia, prized for their meat and beautiful shell. As a result they were poached nearly to extinction in the early 1990s, but with a little help from scientists, the wild abalone is slowly recovering [[2]](http://loe.org/shows/segments.html?programID=15-P13-00031&segmentID=3).
 
 ## Why Model Rings
-TBD
+Rings in abalone correspond to their age, similart to rings in trees.  The age of abalone would be of interest to marine biologists as well as abalone farmers for a variety of reasons. Although other methods exist [[3](http://www.researchgate.net/profile/Craig_Mundy/publication/201169638_Determining_age_and_growth_of_abalone_using_stable_oxygen_isotopes_a_tool_for_fisheries_management/links/004635387d6171b3f3000000.pdf)], the method described on the data repository page for determining the age of abalone involves cutting the shell through the cone, staining it, and counting the number of rings through a microscope which is a destructive and time-consuming task [[4](https://archive.ics.uci.edu/ml/datasets/Abalone)].
+
+In order to make the task of predicting age faster and easier, other measurements, which are easier to obtain, were investigated to predict the age [[4](https://archive.ics.uci.edu/ml/datasets/Abalone)].
 
 # Data Preparation
+## Reading the Data
+
+The data was first obtained from the UCI repository[[4](https://archive.ics.uci.edu/ml/datasets/Abalone)] and then read into R by running:
+
+```{r}
+abalone <- read.table("abalone.data", sep=',')
+```
+When running this command, one must make sure that the working directory is set to the same directory where the data file resides.
+
+## Converting Catagorical Data
+
+The first column of the original data [[4](https://archive.ics.uci.edu/ml/datasets/Abalone)] was labeled **Sex** and was populated with the categorical values **M**, **F**, and **I** corresponding to males, females and infants respectively.  In facilitate inclusion of the **Sex** variable in the model, these categorical values were converted to numerical values.  This was doneby replacing the original colun with two new columns.  The first new column was labeled **M** for male and the second was labeled **F** for female.  Males were deignated by putting a 1 in the **M** column and a 0 in the  **F** column.  Females were designated by putting a 0 in the **M** column and a 1 in teh **F** column.  Infants were designated by a 0 in both the **M** and **F** columns.  
+
+The following code was used to convert the **Sex** (V1) column:
+
+```{r convertSex, cache=TRUE}
+convertSex <- function(data.df = abalone) {
+    library(dplyr)
+    male <- (data.df[, 1] == 'M') * 1
+    female <- (data.df[, 1] == 'F') * 1
+    converted <- cbind(male, female, data.df[, 2:length(data.df)])
+    
+    return(converted)
+}
+```
+
 
 # Regressions Analysis
 
@@ -38,3 +78,8 @@ TBD
 # Discussion
 
 # References
+[1] Wikipedia - https://en.wikipedia.org/wiki/Abalone  
+[2] Living On Earth - http://loe.org/shows/segments.html?programID=15-P13-00031&segmentID=3  
+[3] Stable oxygen method - http://www.researchgate.net/profile/Craig_Mundy/publication/201169638_Determining_age_and_growth_of_abalone_using_stable_oxygen_isotopes_a_tool_for_fisheries_management  
+[4] UCI data repository (data source) - https://archive.ics.uci.edu/ml/datasets/Abalone  
+[9] Rings not annual - http://www.publish.csiro.au/?paper=MF9921215
