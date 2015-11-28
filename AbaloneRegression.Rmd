@@ -20,7 +20,7 @@ There are a number of packages in R, Python, and other languages that can perfor
 
 In this project, an LRA was performed on a dataset of characteristics (features) related to the number of abalone rings which was treated as the independent or response variable.  This analysis was performed in two ways.  First, it was done "from scratch" using nothing but base R language constructs such as matrix operations.  Second, the analysis is duplicate used the caret package.
 
-The analysis started with a quick exploratory data analyisis (EDA) which began with standardizing the indepependent variables (features) before constructing a matrix of scatter plots in order to again a high level understanding of the relationships between feature pairs. The features analyzed were: Sex (Male, Female, or Infant), Length, Diameter, Height, Whole weight, Shucked weight, Viscera weight, and Shell weight.
+The analysis starts with a quick exploratory data analyisis (EDA) which begins with standardizing the indepependent variables (features) before constructing a matrix of scatter plots in order to gain a high level understanding of the relationships between feature pairs. The features analyzed were: Sex (Male, Female, or Infant), Length, Diameter, Height, Whole weight, Shucked weight, Viscera weight, and Shell weight.
 
 Following the pairs plot, the construction of the linear model was initiated by randomly partitioning the data into training and test sets. Following the data partitioning, the coefficients for the linear model were calculated for various ridge regression parameters ($\lambda$) on the training set.  The $\lambda$ which minimized the root mean square error (RMSE) was determined and then used in the model to make some predictions.
 
