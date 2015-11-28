@@ -66,6 +66,8 @@ convertSex <- function(data.df = abalone) {
 }
 ```
 
+## Data Partitioning
+As is standard practice, the model was constructed using randomly selected portions of the dataset.  The portion used to create the model is referred to as the *training set* while the remaining portion which is used to test and validate predictions is referred to as the *testing set*.
 
 # Regressions Analysis
 
