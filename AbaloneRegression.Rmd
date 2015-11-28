@@ -11,7 +11,8 @@ output:
 ---
 
 ```{r echo=FALSE, eval=FALSE}
-setwd("D:/dev/AbaloneRegression")
+# setwd("D:/dev/AbaloneRegression")       # workstation
+# setwd("C:/data/dev/AbaloneRegression")  # laptop
 ```
 
 
