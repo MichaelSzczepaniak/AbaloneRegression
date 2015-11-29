@@ -5,6 +5,10 @@
 misc/*
 #!misc/*.???
 
+AbaloneRegression_cache/*
+docs/*
+*.RData
+
 #### R project stuff
 # History files
 .Rhistory
