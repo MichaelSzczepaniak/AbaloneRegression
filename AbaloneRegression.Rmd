@@ -10,7 +10,7 @@ output:
     toc: yes
 ---
 
-```{r echo=FALSE, eval=FALSE}
+```{r echo=FALSE, eval=FALSE, message=FALSE}
 setwd("D:/dev/AbaloneRegression")  # try_stuff changes
 ```
 
@@ -70,7 +70,11 @@ convertSex <- function(data.df = abalone) {
 As is standard practice, the model was constructed using randomly selected portions of the dataset.  The portion used to create the model is referred to as the *training set* while the remaining portion which is used to test and validate predictions is referred to as the *testing set*.
 
 # Regressions Analysis
-## This will create a merge conflict with startSection4 branch
+## The Linear Model
+### Definition of the Linear Model
+The model used to describe the data is as follows:
+
+(@basemodel) $R = w_0 + \sum_{i=1}^{9}{w_i}{x_i}$
 
 # Experiments
 
