@@ -3,21 +3,16 @@ title: "Predicting Abalone Age Through Ridge Regression"
 author: "Michael Szczepaniak"
 date: 'Original Release: February 2008 | Revised: November 2015'
 output:
-  pdf_document:
-    toc: yes
   html_document:
     number_sections: yes
     toc: yes
+  pdf_document:
+    toc: yes
 ---
 
-<<<<<<< HEAD
 ```{r echo=FALSE, eval=FALSE, message=FALSE}
-setwd("D:/dev/AbaloneRegression")  # try_stuff changes
-=======
-```{r echo=FALSE, eval=FALSE}
 # setwd("D:/dev/AbaloneRegression")       # workstation
 # setwd("C:/data/dev/AbaloneRegression")  # laptop
->>>>>>> origin/master
 ```
 
 
@@ -76,15 +71,11 @@ convertSex <- function(data.df = abalone) {
 As is standard practice, the model was constructed using randomly selected portions of the dataset.  The portion used to create the model is referred to as the *training set* while the remaining portion which is used to test and validate predictions is referred to as the *testing set*.
 
 # Regressions Analysis
-<<<<<<< HEAD
 ## The Linear Model
 ### Definition of the Linear Model
 The model used to describe the data is as follows:
 
 (@basemodel) $R = w_0 + \sum_{i=1}^{9}{w_i}{x_i}$
-=======
-## This will create a merge conflict...
->>>>>>> origin/master
 
 # Experiments
 
