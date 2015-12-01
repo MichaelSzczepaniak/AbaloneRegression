@@ -136,7 +136,28 @@ img {
 </div>
 <div id="data-partitioning" class="section level2">
 <h2><span class="header-section-number">3.3</span> Data Partitioning</h2>
-<p>As is standard practice, the model was constructed using randomly selected portions of the dataset. The portion used to create the model is referred to as the <em>training set</em> while the remaining portion which is used to test and validate predictions is referred to as the <em>testing set</em>.</p>
+<p>As is standard practice, the model was constructed using randomly selected portions of the dataset. The portion used to create the model is referred to as the <span class="math">\(\textit{training set}\)</span> while the remaining portion which is used to test and validate predictions is referred to as the <span class="math">\(\textit{testing set}\)</span>.</p>
+<p>During the analysis, many iterations based on different randomly selected training and test sets had to be constructed. The following two R functions were frequently called to accomplish this task:</p>
+<pre class="r"><code># Returns a randomly selected subset of rows from the original input dataframe.
+# orig - original (complete) dataset (dataframe), assumed that samples
+#        are stored in rows of a 2-D table
+# fraction - fraction of the original dataset used for training
+# randomSeed - integer used to set the seed for the random number generator
+trainSetRows &lt;- function(orig, fraction, randomSeed) {
+  set.seed(randomSeed)
+  randorder &lt;- sample(nrow(orig))  # create set of randomly selected rows
+  nTrain &lt;- round(nrow(orig)*fraction) # calc # of rows in training set
+  trainRows &lt;- randorder[1:nTrain]  # 1st nTrain rows in rand order
+  trainRows
+}
+
+# Returns a vector of integers corresponding to row numbers of the test set
+# allRows - a vector containing all the row numbers in the data table
+# trainRows - the vector of training rows returned from the trainSetRows function
+testSetRows &lt;- function(allRows, trainRows) {
+  testRows &lt;- setdiff(allRows, trainRows) # take away train rows leaves test rows
+  testRows
+}</code></pre>
 </div>
 </div>
 <div id="regressions-analysis" class="section level1">
@@ -149,6 +170,7 @@ img {
 <ol style="list-style-type: example">
 <li><span class="math">\(R = w_0 + \sum_{i=1}^{9}{w_i}{x_i}\)</span></li>
 </ol>
+<p>In equation (1), <span class="math">\(R\)</span> is the number of rings the abalone has, the <span class="math">\(w\)</span>’s are the weights (our fitted parameters) and the <span class="math">\(x_i\)</span>’s are the independent variables. The independent variables can be described as: <span class="math">\({x_1}\)</span> = M, <span class="math">\({x_2}\)</span> = F, <span class="math">\({x_3}\)</span> = Length, <span class="math">\({x_4}\)</span> = Diameter, <span class="math">\({x_5}\)</span> = Height, <span class="math">\({x_6}\)</span> = Whole weight, <span class="math">\({x_7}\)</span> = Shucked weight, <span class="math">\({x_8}\)</span> = Viscera weight, and <span class="math">\({x_9}\)</span>= Shell weight.</p>
 </div>
 </div>
 </div>

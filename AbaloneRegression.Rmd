@@ -3,10 +3,10 @@ title: "Predicting Abalone Age Through Ridge Regression"
 author: "Michael Szczepaniak"
 date: 'Original Release: February 2008 | Revised: November 2015'
 output:
+  pdf_document:
+    toc: yes
   html_document:
     number_sections: yes
-    toc: yes
-  pdf_document:
     toc: yes
 ---
 
@@ -68,7 +68,33 @@ convertSex <- function(data.df = abalone) {
 ```
 
 ## Data Partitioning
-As is standard practice, the model was constructed using randomly selected portions of the dataset.  The portion used to create the model is referred to as the *training set* while the remaining portion which is used to test and validate predictions is referred to as the *testing set*.
+As is standard practice, the model was constructed using randomly selected portions of the dataset.  The portion used to create the model is referred to as the $\textit{training set}$ while the remaining portion which is used to test and validate predictions is referred to as the $\textit{testing set}$.
+
+During the analysis, many iterations based on different randomly selected training and test sets had to be constructed.  The following two R functions were frequently called to accomplish this task:
+
+```{r}
+# Returns a randomly selected subset of rows from the original input dataframe.
+# orig - original (complete) dataset (dataframe), assumed that samples
+#        are stored in rows of a 2-D table
+# fraction - fraction of the original dataset used for training
+# randomSeed - integer used to set the seed for the random number generator
+trainSetRows <- function(orig, fraction, randomSeed) {
+  set.seed(randomSeed)
+  randorder <- sample(nrow(orig))  # create set of randomly selected rows
+  nTrain <- round(nrow(orig)*fraction) # calc # of rows in training set
+  trainRows <- randorder[1:nTrain]  # 1st nTrain rows in rand order
+  trainRows
+}
+
+# Returns a vector of integers corresponding to row numbers of the test set
+# allRows - a vector containing all the row numbers in the data table
+# trainRows - the vector of training rows returned from the trainSetRows function
+testSetRows <- function(allRows, trainRows) {
+  testRows <- setdiff(allRows, trainRows) # take away train rows leaves test rows
+  testRows
+}
+```
+
 
 # Regressions Analysis
 ## The Linear Model
@@ -76,6 +102,8 @@ As is standard practice, the model was constructed using randomly selected porti
 The model used to describe the data is as follows:
 
 (@basemodel) $R = w_0 + \sum_{i=1}^{9}{w_i}{x_i}$
+
+In equation (1), $R$ is the number of rings the abalone has, the $w$'s are the weights (our fitted parameters) and the $x_i$'s are the independent variables.  The independent variables can be described as: ${x_1}$ = M, ${x_2}$ = F, ${x_3}$ = Length, ${x_4}$ = Diameter, ${x_5}$ = Height, ${x_6}$ = Whole weight, ${x_7}$ = Shucked weight, ${x_8}$ = Viscera weight, and ${x_9}$= Shell weight.
 
 # Experiments
 
