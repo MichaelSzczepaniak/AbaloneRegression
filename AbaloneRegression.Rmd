@@ -1,12 +1,12 @@
 ---
 title: "Predicting Abalone Age Through Ridge Regression"
 author: "Michael Szczepaniak"
-date: 'Original Release: February 2008 | Revised: November 2015'
+date: 'Revised: December 2015'
 output:
-  pdf_document:
-    toc: yes
   html_document:
     number_sections: yes
+    toc: yes
+  pdf_document:
     toc: yes
 ---
 
@@ -103,7 +103,19 @@ The model used to describe the data is as follows:
 
 (@basemodel) $R = w_0 + \sum_{i=1}^{9}{w_i}{x_i}$
 
-In equation (1), $R$ is the number of rings the abalone has, the $w$'s are the weights (our fitted parameters) and the $x_i$'s are the independent variables.  The independent variables can be described as: ${x_1}$ = M, ${x_2}$ = F, ${x_3}$ = Length, ${x_4}$ = Diameter, ${x_5}$ = Height, ${x_6}$ = Whole weight, ${x_7}$ = Shucked weight, ${x_8}$ = Viscera weight, and ${x_9}$= Shell weight.
+In equation (@basemodel), $R$ is the number of rings the abalone has, the $w$'s are the weights (our fitted parameters) and the $x_i$'s are the independent variables.  The independent variables can be described as: ${x_1}$ = M, ${x_2}$ = F, ${x_3}$ = Length, ${x_4}$ = Diameter, ${x_5}$ = Height, ${x_6}$ = Whole weight, ${x_7}$ = Shucked weight, ${x_8}$ = Viscera weight, and ${x_9}$= Shell weight.
+
+### $\lambda$ Parameterization
+
+The goal was to fit the $w$ vector described in (@basemodel), in such a way as to minimize the residual sum of squares (RSS) parameterized by the ridge regression factor $\lambda$.  Since minimzing a constant times RSS is the same as minimizing RSS, the error which we want to minimize can be written in matrix form as:
+
+(@rss) $\frac{1}{2}RSS = \frac{1}{2}\sum_{i=1}^{9}\left({t_n}-{\textbf{w}^T}{\textbf{x}_i}\right)^2 + \frac{1}{2}\lambda{\textbf{w}^T}{\textbf{w}}$
+
+where $t_n$ are know target values and the constant $\frac{1}{2}$ has been multiplied by both sides to make the result of differentiation cleaner.  Taking the gradient of (@rss), setting it equal to zero, and solving for the vector $\textbf{w}$, yields the following solution in matrix notation:
+
+(@weightSolution) $\textbf{w} = \left(\lambda + {\textbf{X}_T}{\textbf{X}}\right)^{-1}{\textbf{X}^T}{\textbf{T}}$
+
+The matrices $\textbf{X}$ and $\textbf{T}$ are the independent and dependent (target) variables respectively.
 
 # Experiments
 

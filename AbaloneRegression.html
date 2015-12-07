@@ -63,7 +63,7 @@ img {
 <div id="header">
 <h1 class="title">Predicting Abalone Age Through Ridge Regression</h1>
 <h4 class="author"><em>Michael Szczepaniak</em></h4>
-<h4 class="date"><em>Original Release: February 2008 | Revised: November 2015</em></h4>
+<h4 class="date"><em>Revised: December 2015</em></h4>
 </div>
 
 <div id="TOC">
@@ -81,6 +81,7 @@ img {
 <li><a href="#regressions-analysis"><span class="toc-section-number">4</span> Regressions Analysis</a><ul>
 <li><a href="#the-linear-model"><span class="toc-section-number">4.1</span> The Linear Model</a><ul>
 <li><a href="#definition-of-the-linear-model"><span class="toc-section-number">4.1.1</span> Definition of the Linear Model</a></li>
+<li><a href="#lambda-parameterization"><span class="toc-section-number">4.1.2</span> <span class="math">\(\lambda\)</span> Parameterization</a></li>
 </ul></li>
 </ul></li>
 <li><a href="#experiments"><span class="toc-section-number">5</span> Experiments</a></li>
@@ -171,6 +172,18 @@ testSetRows &lt;- function(allRows, trainRows) {
 <li><span class="math">\(R = w_0 + \sum_{i=1}^{9}{w_i}{x_i}\)</span></li>
 </ol>
 <p>In equation (1), <span class="math">\(R\)</span> is the number of rings the abalone has, the <span class="math">\(w\)</span>’s are the weights (our fitted parameters) and the <span class="math">\(x_i\)</span>’s are the independent variables. The independent variables can be described as: <span class="math">\({x_1}\)</span> = M, <span class="math">\({x_2}\)</span> = F, <span class="math">\({x_3}\)</span> = Length, <span class="math">\({x_4}\)</span> = Diameter, <span class="math">\({x_5}\)</span> = Height, <span class="math">\({x_6}\)</span> = Whole weight, <span class="math">\({x_7}\)</span> = Shucked weight, <span class="math">\({x_8}\)</span> = Viscera weight, and <span class="math">\({x_9}\)</span>= Shell weight.</p>
+</div>
+<div id="lambda-parameterization" class="section level3">
+<h3><span class="header-section-number">4.1.2</span> <span class="math">\(\lambda\)</span> Parameterization</h3>
+<p>The goal was to fit the <span class="math">\(w\)</span> vector described in (1), in such a way as to minimize the residual sum of squares (RSS) parameterized by the ridge regression factor <span class="math">\(\lambda\)</span>. Since minimzing a constant times RSS is the same as minimizing RSS, the error which we want to minimize can be written in matrix form as:</p>
+<ol start="2" style="list-style-type: example">
+<li><span class="math">\(\frac{1}{2}RSS = \frac{1}{2}\sum_{i=1}^{9}\left({t_n}-{\textbf{w}^T}{\textbf{x}_i}\right)^2 + \frac{1}{2}\lambda{\textbf{w}^T}{\textbf{w}}\)</span></li>
+</ol>
+<p>where <span class="math">\(t_n\)</span> are know target values and the constant <span class="math">\(\frac{1}{2}\)</span> has been multiplied by both sides to make the result of differentiation cleaner. Taking the gradient of (2), setting it equal to zero, and solving for the vector <span class="math">\(\textbf{w}\)</span>, yields the following solution in matrix notation:</p>
+<ol start="3" style="list-style-type: example">
+<li><span class="math">\(\textbf{w} = \left(\lambda + {\textbf{X}_T}{\textbf{X}}\right)^{-1}{\textbf{X}^T}{\textbf{T}}\)</span></li>
+</ol>
+<p>The matrices <span class="math">\(\textbf{X}\)</span> and <span class="math">\(\textbf{T}\)</span> are the independent and dependent (target) variables respectively.</p>
 </div>
 </div>
 </div>
