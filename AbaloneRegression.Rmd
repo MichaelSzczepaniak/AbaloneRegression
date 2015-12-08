@@ -3,10 +3,10 @@ title: "Predicting Abalone Age Through Ridge Regression"
 author: "Michael Szczepaniak"
 date: 'Revised: December 2015'
 output:
-  pdf_document:
-    toc: yes
   html_document:
     number_sections: yes
+    toc: yes
+  pdf_document:
     toc: yes
 ---
 
@@ -199,6 +199,39 @@ llsUse <- function(weights, X) {
 The $llsUse$ function outputs the vector $model$ which contains the model predictions for the independent variables $\textbf{X}$ that were passed in.  These predictions could then be used to evaluate RMSE which in turn allowed us to explore how $\lambda$ and training partition impacted the models accuracy.  This will be explored in detail in section 5.3.
 
 # Experiments
+
+Before diving into regression analysis, it's normally a good idea to take a look at the relationships between the variables - particularly the independent variables.  To accomplish this task, the following R code, based on the $pairs$ function was used:
+
+```{r}
+panel.hist <- function(x) {
+   usr <- par("usr"); on.exit(par(usr))
+   par(usr = c(usr[1:2], 0, 1.5))
+   h <- hist(x, plot = FALSE)
+   breaks <- h$breaks; nB <- length(breaks)
+   y <- h$counts; y <-y/max(y)
+   rect(breaks[-nB], 0, breaks[-1], y, col="cyan")
+   dev.copy2eps(file="scatter2.eps")
+}
+panel.cor <- function(x,y,digits=4, prefix="", cex.cor)
+{
+   usr <- par("usr"); on.exit(par(usr))
+   par(usr = c(0,1,0,1))
+   r <- abs(cor(x,y))
+   txt <- format(c(r, 0.123456789), digits=digits)[1]
+   txt <- paste(prefix, txt, sep="")
+   if(missing(cex.cor)) cex <- 0.8/strwidth(txt)
+   text(0.5, 0.5, txt, cex=cex*r)
+}
+
+diag_hist <- function(y) {
+   pairs(y, diag.panel=panel.hist, upper.panel=panel.cor)
+}
+```
+This code produced the chart shown in Figure 1.
+
+In Figure 1, the upper triangular plots were just a transposed version of the charts in the lower triangular region, so it seemed reasonable to put something more meaningful in this region.  In this case, the correlation coefficient between $x$ (horizontal axis) and $y$ (vertical axis) variables was selected.  Similarly, histograms were chosen for the diagonals.
+
+Dependencies among independent variables is an undesirable quality when doing regression analysis and we can observe some strong dependencies especially between $Length$ and $Diameter$.  In section 6, we'll delve into this in more detail.  There also appears to be some dependencies between the different kinds of weights (Shucked, etc.), but the thickness of the scatter is greater than the thickness between $Length$ and $Diameter$.
 
 # Results
 

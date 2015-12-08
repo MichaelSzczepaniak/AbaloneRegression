@@ -265,6 +265,33 @@ llsUse &lt;- function(weights, X) {
 </div>
 <div id="experiments" class="section level1">
 <h1><span class="header-section-number">5</span> Experiments</h1>
+<p>Before diving into regression analysis, it’s normally a good idea to take a look at the relationships between the variables - particularly the independent variables. To accomplish this task, the following R code, based on the <span class="math">\(pairs\)</span> function was used:</p>
+<pre class="r"><code>panel.hist &lt;- function(x) {
+   usr &lt;- par(&quot;usr&quot;); on.exit(par(usr))
+   par(usr = c(usr[1:2], 0, 1.5))
+   h &lt;- hist(x, plot = FALSE)
+   breaks &lt;- h$breaks; nB &lt;- length(breaks)
+   y &lt;- h$counts; y &lt;-y/max(y)
+   rect(breaks[-nB], 0, breaks[-1], y, col=&quot;cyan&quot;)
+   dev.copy2eps(file=&quot;scatter2.eps&quot;)
+}
+panel.cor &lt;- function(x,y,digits=4, prefix=&quot;&quot;, cex.cor)
+{
+   usr &lt;- par(&quot;usr&quot;); on.exit(par(usr))
+   par(usr = c(0,1,0,1))
+   r &lt;- abs(cor(x,y))
+   txt &lt;- format(c(r, 0.123456789), digits=digits)[1]
+   txt &lt;- paste(prefix, txt, sep=&quot;&quot;)
+   if(missing(cex.cor)) cex &lt;- 0.8/strwidth(txt)
+   text(0.5, 0.5, txt, cex=cex*r)
+}
+
+diag_hist &lt;- function(y) {
+   pairs(y, diag.panel=panel.hist, upper.panel=panel.cor)
+}</code></pre>
+<p>This code produced the chart shown in Figure 1.</p>
+<p>In Figure 1, the upper triangular plots were just a transposed version of the charts in the lower triangular region, so it seemed reasonable to put something more meaningful in this region. In this case, the correlation coefficient between <span class="math">\(x\)</span> (horizontal axis) and <span class="math">\(y\)</span> (vertical axis) variables was selected. Similarly, histograms were chosen for the diagonals.</p>
+<p>Dependencies among independent variables is an undesirable quality when doing regression analysis and we can observe some strong dependencies especially between <span class="math">\(Length\)</span> and <span class="math">\(Diameter\)</span>. In section 6, we’ll delve into this in more detail. There also appears to be some dependencies between the different kinds of weights (Shucked, etc.), but the thickness of the scatter is greater than the thickness between <span class="math">\(Length\)</span> and <span class="math">\(Diameter\)</span>.</p>
 </div>
 <div id="results" class="section level1">
 <h1><span class="header-section-number">6</span> Results</h1>
