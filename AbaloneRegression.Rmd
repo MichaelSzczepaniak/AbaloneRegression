@@ -3,10 +3,10 @@ title: "Predicting Abalone Age Through Ridge Regression"
 author: "Michael Szczepaniak"
 date: 'Revised: December 2015'
 output:
+  pdf_document:
+    toc: yes
   html_document:
     number_sections: yes
-    toc: yes
-  pdf_document:
     toc: yes
 ---
 
@@ -52,7 +52,7 @@ When running this command, one must make sure that the working directory is set 
 
 ## Converting Catagorical Data
 
-The first column of the original data [[4](https://archive.ics.uci.edu/ml/datasets/Abalone)] was labeled **Sex** and was populated with the categorical values **M**, **F**, and **I** corresponding to males, females and infants respectively.  In facilitate inclusion of the **Sex** variable in the model, these categorical values were converted to numerical values.  This was doneby replacing the original colun with two new columns.  The first new column was labeled **M** for male and the second was labeled **F** for female.  Males were deignated by putting a 1 in the **M** column and a 0 in the  **F** column.  Females were designated by putting a 0 in the **M** column and a 1 in teh **F** column.  Infants were designated by a 0 in both the **M** and **F** columns.  
+The first column of the original data [[4](https://archive.ics.uci.edu/ml/datasets/Abalone)] was labeled **Sex** and was populated with the categorical values **M**, **F**, and **I** corresponding to males, females and infants respectively.  In order to facilitate inclusion of the **Sex** variable into the model, these categorical values were converted to numerical values.  This was done by replacing the original column with two new columns.  The first new column was labeled **M** for male and the second was labeled **F** for female.  Males were deignated by putting a 1 in the **M** column and a 0 in the  **F** column.  Females were designated by putting a 0 in the **M** column and a 1 in the **F** column.  Infants were designated by a 0 in both the **M** and **F** columns.  
 
 The following code was used to convert the **Sex** (V1) column:
 
@@ -60,9 +60,9 @@ The following code was used to convert the **Sex** (V1) column:
 convertSex <- function(data.df = abalone) {
     library(dplyr)
     male <- (data.df[, 1] == 'M') * 1
-    female <- (data.df[, 1] == 'F') * 1
+    female <- (data.df[, 1] == 'F') * 1  # if I, left as 0
+    # leave out the first row and add prepend the two new col's
     converted <- cbind(male, female, data.df[, 2:length(data.df)])
-    
     return(converted)
 }
 ```
@@ -74,24 +74,28 @@ During the analysis, many iterations based on different randomly selected traini
 
 ```{r}
 # Returns a randomly selected subset of rows from the original input dataframe.
-# orig - original (complete) dataset (dataframe), assumed that samples
-#        are stored in rows of a 2-D table
+#
+# orig - original (complete) dataset (dataframe), assumes that samples
+#        are stored in as rows
 # fraction - fraction of the original dataset used for training
 # randomSeed - integer used to set the seed for the random number generator
+#              (used to provide reproducibility)
 trainSetRows <- function(orig, fraction, randomSeed) {
   set.seed(randomSeed)
   randorder <- sample(nrow(orig))  # create set of randomly selected rows
   nTrain <- round(nrow(orig)*fraction) # calc # of rows in training set
   trainRows <- randorder[1:nTrain]  # 1st nTrain rows in rand order
-  trainRows
+  return(trainRows)
 }
 
 # Returns a vector of integers corresponding to row numbers of the test set
+# which are assumed to be all the rows NOT in the training  set.
+#
 # allRows - a vector containing all the row numbers in the data table
 # trainRows - the vector of training rows returned from the trainSetRows function
 testSetRows <- function(allRows, trainRows) {
   testRows <- setdiff(allRows, trainRows) # take away train rows leaves test rows
-  testRows
+  return(testRows)
 }
 ```
 
@@ -107,15 +111,15 @@ In equation (@basemodel), $R$ is the number of rings the abalone has, the $w$'s 
 
 ### $\lambda$ Parameterization
 
-The goal was to fit the $w$ vector described in (@basemodel), in such a way as to minimize the residual sum of squares (RSS) parameterized by the ridge regression factor $\lambda$.  Since minimzing a constant times RSS is the same as minimizing RSS, the error which we want to minimize can be written in matrix form as:
+The goal was to fit the $w$ vector described in (@basemodel), in such a way as to minimize the residual sum of squares (RSS) parameterized by the ridge regression factor $\lambda$ which penalizes large coefficients.  Since minimzing a constant times RSS is the same as minimizing RSS, the error which we want to minimize can be written in matrix form as:
 
 (@rss) $\frac{1}{2}RSS = \frac{1}{2}\sum_{i=1}^{9}\left({t_n}-{\textbf{w}^T}{\textbf{x}_i}\right)^2 + \frac{1}{2}\lambda{\textbf{w}^T}{\textbf{w}}$
 
-where $t_n$ are know target values and the constant $\frac{1}{2}$ has been multiplied by both sides to make the result of differentiation cleaner.  Taking the gradient of (@rss), setting it equal to zero, and solving for the vector $\textbf{w}$, yields the following solution in matrix notation:
+where $t_n$ are know target (R) values and the constant $\frac{1}{2}$ has been multiplied by both sides to make the result of differentiation cleaner.  Taking the gradient of (@rss), setting it equal to zero, and solving for the coefficients vector $\textbf{w}$, yields the following solution in matrix notation [[5](http://statweb.stanford.edu/~tibs/ElemStatLearn/printings/ESLII_print10.pdf)]:
 
-(@weightSolution) $\textbf{w} = \left(\lambda + {\textbf{X}_T}{\textbf{X}}\right)^{-1}{\textbf{X}^T}{\textbf{T}}$
+(@weightSolution) $\textbf{w} = \left({\textbf{X}^T}{\textbf{X} + \lambda{\textbf{I}}}\right)^{-1}{\textbf{X}^T}{\textbf{T}}$ 
 
-The matrices $\textbf{X}$ and $\textbf{T}$ are the independent and dependent (target) variables respectively.
+The size of the independent variables matrix $\textbf{X}$ is $\left(n \times d+1 \right)$ where $n$ is the number of samples and $d+1$ is the number of independent variables in the $\textbf{w}$ vector which includes the $w_0$ bias term.  The dependent variables matrix of targets $\textbf{T}$ is a column vector of size $\left(n \times 1 \right)$.  The diagonal matrix $\lambda\textbf{I}$ is size $\left(d+1 \times d+1 \right)$.
 
 ### Calculating weights
 With equation (@weightSolution), we now have an expression that can be used to solve for the weight vector $\textbf{w}$ given parameter $\lambda$.  The following R function was used to accomplish this task:
@@ -123,27 +127,26 @@ With equation (@weightSolution), we now have an expression that can be used to s
 ```{r}
 ## llsMake (Linear Least Squares Make) Returns a vector of the linear least
 ## square regression weights with the Ridge Regression penalty factored in.
-## Arguments:
-## X - the coefficient matrix wrt the independent variables
-## Y - the matrix of dependent variables
-## lam - square weight penalty factor
+## 
+## X - n x d+1 coefficient matrix wrt the independent variables
+## Y - n x 1 matrix of dependent variables (aka targets)
+## lambda (optional) - ridge regression (square weight) penalty factor
 ## 
 ## IMPORTANT USAGE NOTES:
-## (1) Independent var's should NOT be standardized (this is done internally).
+## (1) Independent var's should NOT be standardized because it's done internally.
 ## (2) Samples w/ missing data need to be removed before running this function.
-## (3) This function can be called within a loop of incremental lambdas.
+## (3) If lambda is not passed, straight (unpenalized) linear regression is done.
 #
-llsMake <- function(X,Y,lam) {
+llsMake <- function(X, Y, lambda=0) {
    # if X or Y come in as a list, convert it to numeric
-   X <- as.matrix(apply(X,2,as.numeric))
-   # account for the bias
+   X <- as.matrix(apply(X, 2, as.numeric))
    # standardize the independent variables
-   means <- matrix(apply(X,2,mean),ncol(X),1)
-   stdevs <- matrix(apply(X,2,sd),ncol(X),1)
+   means <- matrix(apply(X, 2, mean), ncol(X), 1)
+   stdevs <- matrix(apply(X, 2, sd), ncol(X), 1)
    N <- nrow(X)  # number of samples
    D <- ncol(X)  # number of parameters of dimensions
-   Xs <- (X - matrix(rep(means,N),N,D,byrow=TRUE))/
-          matrix(rep(stdevs,N),N,D,byrow=TRUE)
+   Xs <- (X - matrix(rep(means, N), N, D, byrow=TRUE))/
+          matrix(rep(stdevs, N), N, D, byrow=TRUE)
 
    Y <- as.matrix(apply(Y,2,as.numeric))
    # account for the bias
@@ -200,39 +203,6 @@ The $llsUse$ function outputs the vector $model$ which contains the model predic
 
 # Experiments
 
-Before diving into regression analysis, it's normally a good idea to take a look at the relationships between the variables - particularly the independent variables.  To accomplish this task, the following R code, based on the $pairs$ function was used:
-
-```{r}
-panel.hist <- function(x) {
-   usr <- par("usr"); on.exit(par(usr))
-   par(usr = c(usr[1:2], 0, 1.5))
-   h <- hist(x, plot = FALSE)
-   breaks <- h$breaks; nB <- length(breaks)
-   y <- h$counts; y <-y/max(y)
-   rect(breaks[-nB], 0, breaks[-1], y, col="cyan")
-   dev.copy2eps(file="scatter2.eps")
-}
-panel.cor <- function(x,y,digits=4, prefix="", cex.cor)
-{
-   usr <- par("usr"); on.exit(par(usr))
-   par(usr = c(0,1,0,1))
-   r <- abs(cor(x,y))
-   txt <- format(c(r, 0.123456789), digits=digits)[1]
-   txt <- paste(prefix, txt, sep="")
-   if(missing(cex.cor)) cex <- 0.8/strwidth(txt)
-   text(0.5, 0.5, txt, cex=cex*r)
-}
-
-diag_hist <- function(y) {
-   pairs(y, diag.panel=panel.hist, upper.panel=panel.cor)
-}
-```
-This code produced the chart shown in Figure 1.
-
-In Figure 1, the upper triangular plots were just a transposed version of the charts in the lower triangular region, so it seemed reasonable to put something more meaningful in this region.  In this case, the correlation coefficient between $x$ (horizontal axis) and $y$ (vertical axis) variables was selected.  Similarly, histograms were chosen for the diagonals.
-
-Dependencies among independent variables is an undesirable quality when doing regression analysis and we can observe some strong dependencies especially between $Length$ and $Diameter$.  In section 6, we'll delve into this in more detail.  There also appears to be some dependencies between the different kinds of weights (Shucked, etc.), but the thickness of the scatter is greater than the thickness between $Length$ and $Diameter$.
-
 # Results
 
 # A Personal Curiosity: Bias and Training Partition
@@ -244,4 +214,5 @@ Dependencies among independent variables is an undesirable quality when doing re
 [2] Living On Earth - http://loe.org/shows/segments.html?programID=15-P13-00031&segmentID=3  
 [3] Stable oxygen method - http://www.researchgate.net/profile/Craig_Mundy/publication/201169638_Determining_age_and_growth_of_abalone_using_stable_oxygen_isotopes_a_tool_for_fisheries_management  
 [4] UCI data repository (data source) - https://archive.ics.uci.edu/ml/datasets/Abalone  
+[5] [The Elements of Statistical Learning - 2nd Edition, page 64 http://statweb.stanford.edu/~tibs/ElemStatLearn/printings/ESLII_print10.pdf  
 [9] Rings not annual - http://www.publish.csiro.au/?paper=MF9921215
