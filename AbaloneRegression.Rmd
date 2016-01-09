@@ -1,7 +1,7 @@
 ---
 title: "Predicting Abalone Age Through Ridge Regression"
 author: "Michael Szczepaniak"
-date: 'Revised: December 2015'
+date: 'Revised: January 2016'
 output:
   pdf_document:
     toc: yes
@@ -61,7 +61,7 @@ convertSex <- function(data.df = abalone) {
     library(dplyr)
     male <- (data.df[, 1] == 'M') * 1
     female <- (data.df[, 1] == 'F') * 1  # if I, left as 0
-    # leave out the first row and add prepend the two new col's
+    # leave out the first row and prepend the two new col's
     converted <- cbind(male, female, data.df[, 2:length(data.df)])
     return(converted)
 }
@@ -122,33 +122,39 @@ where $t_n$ are know target (R) values and the constant $\frac{1}{2}$ has been m
 The size of the independent variables matrix $\textbf{X}$ is $\left(n \times d+1 \right)$ where $n$ is the number of samples and $d+1$ is the number of independent variables in the $\textbf{w}$ vector which includes the $w_0$ bias term.  The dependent variables matrix of targets $\textbf{T}$ is a column vector of size $\left(n \times 1 \right)$.  The diagonal matrix $\lambda\textbf{I}$ is size $\left(d+1 \times d+1 \right)$.
 
 ### Calculating weights
-With equation (@weightSolution), we now have an expression that can be used to solve for the weight vector $\textbf{w}$ given parameter $\lambda$.  The following R function was used to accomplish this task:
+In order to use the `solve()` function in R, we first need to rewrite (@weightSolution) in the following form:
+
+(@weightSolution2) $\left({\textbf{X}^T}{\textbf{X} + \lambda{\textbf{I}}}\right)\textbf{w} ={\textbf{X}^T}{\textbf{T}}$ 
+
+With equation (@weightSolution2), we now have an expression that we can pass to ```solve()``` to calculate the weight vector $\textbf{w}$ given parameter $\lambda$.  The function `llsMakeST` was written to accomplish this task with care taken to ensure that the $w_0$ bias term was not penalized by zeroing out the first term in the $\lambda{\textbf{I}}$ matrix as shown below.
 
 ```{r}
-## llsMake (Linear Least Squares Make) Returns a vector of the linear least
-## square regression weights with the Ridge Regression penalty factored in.
+## llsMakeST (Linear Least Squares Make for a Singe Target) Returns a vector of
+## the linear least square regression weights for a single target variable with
+## the Ridge Regression penalty factored in.
 ## 
+## For n = number of samples and d + 1 = number of coefficients including bias:
 ## X - n x d+1 coefficient matrix wrt the independent variables
-## Y - n x 1 matrix of dependent variables (aka targets)
+## Y - n x 1 vector of values for the dependent target variable
 ## lambda (optional) - ridge regression (square weight) penalty factor
+##                     (0 by default, regular unpenalized regression)
 ## 
 ## IMPORTANT USAGE NOTES:
 ## (1) Independent var's should NOT be standardized because it's done internally.
 ## (2) Samples w/ missing data need to be removed before running this function.
 ## (3) If lambda is not passed, straight (unpenalized) linear regression is done.
-#
-llsMake <- function(X, Y, lambda=0) {
+llsMakeST <- function(X, Y, lambda=0) {
    # if X or Y come in as a list, convert it to numeric
    X <- as.matrix(apply(X, 2, as.numeric))
    # standardize the independent variables
    means <- matrix(apply(X, 2, mean), ncol(X), 1)
    stdevs <- matrix(apply(X, 2, sd), ncol(X), 1)
    N <- nrow(X)  # number of samples
-   D <- ncol(X)  # number of parameters of dimensions
+   D <- ncol(X)  # number of parameters (dimensions)
    Xs <- (X - matrix(rep(means, N), N, D, byrow=TRUE))/
           matrix(rep(stdevs, N), N, D, byrow=TRUE)
 
-   Y <- as.matrix(apply(Y,2,as.numeric))
+   Y <- as.matrix(apply(Y, 2, as.numeric))
    # account for the bias
    Xs1 <- cbind(1, Xs)
    colnames(Xs1)[1] <- "bias"
@@ -162,11 +168,12 @@ llsMake <- function(X, Y, lambda=0) {
    w <- cbind(w, meansX)
    w <- cbind(w, stdevsX)
    colnames(w) <- c("weight", "mean", "std dev")
+   
    return(w)
 }
 ```
 
-The $llsMake$ function returns a three column vector.  In the first column are the weights as defined by $\textbf{w}$.  The second and third columns of this matrix contain the means and standard deviations of the independent variable that were used in training the model. By training, we mean solving for $\textbf{w}$.
+The `llsMakeST` function returns a three column vector.  In the first column are the weights as defined by $\textbf{w}$.  The second and third columns of this matrix contain the means and standard deviations of the independent variable that were used in training the model. By training, we mean solving for $\textbf{w}$.
 
 The second and third columns of the $\textbf{w}$ matrix are used to standardize the independent variables. Standardizing takes the following form:
 
@@ -175,33 +182,62 @@ The second and third columns of the $\textbf{w}$ matrix are used to standardize 
 In equation (@standardize), $\textbf{X}_s$ is the matrix of standardized inputs  (independent variables) and the matrices ${\textbf{X}_{mean}}$ and ${\textbf{X}_{stdev}}$ are the means and standard deviations of the inputs.  Standardization provides two advantages: (i) it allows us the ability to better account for significant difference between the regions of training and testing and (ii), it allows us to more easily compare the relative magnitude of the weights.
 
 ## Making Predictions
-To make predictions from the weights calculated from $llsMake $, another R function was created:
+To make predictions from the `llsMakeST` weights, the `llsUseST`function was created:
 
 ```{r}
-# This function returns a matrix of the predicted values based on the weights
-# determined in llsMake.
-#
-llsUse <- function(weights, X) {
+## This function returns a matrix of the predicted target values
+## based on the weights determined in llsMakeST.
+llsUseST <- function(weights, X) {
    X <- as.matrix(apply(X,2,as.numeric))
    # standardize X
    N <- nrow(X)  # number of samples
    D <- ncol(X)  # number of parameters of dimensions
    means <- weights[2:nrow(weights),2]
    stdevs <- weights[2:nrow(weights),3]
-   Xs <- (X - matrix(rep(means,N),N,D,byrow=TRUE))/
-          matrix(rep(stdevs,N),N,D,byrow=TRUE)
+   # standardize the inputs
+   Xs <- (X - matrix(rep(means, N), N, D, byrow=TRUE))/
+          matrix(rep(stdevs, N), N, D, byrow=TRUE)
    
-   Xs1 <- cbind(1,Xs)  # account for the bias
+   Xs1 <- cbind(1, Xs)  # account for the bias
    colnames(Xs1)[1] <- "bias"
-   weights[1,3] <- 1  # replace bias stdev to avoid a division by 0
+   weights[1, 3] <- 1  # replace bias stdev to avoid a division by 0
    model <- Xs1 %*% weights[,1]  # calc the prediction of a single target
    return(model)
 }
 ```
 
-The $llsUse$ function outputs the vector $model$ which contains the model predictions for the independent variables $\textbf{X}$ that were passed in.  These predictions could then be used to evaluate RMSE which in turn allowed us to explore how $\lambda$ and training partition impacted the models accuracy.  This will be explored in detail in section 5.3.
+The `llsUseST' function outputs the vector `model` which contains the model predictions for the independent variables $\textbf{X}$ that were passed in.  These predictions could then be used to evaluate RMSE which in turn allowed us to explore how $\lambda$ and training partition impacted the models accuracy.  This will be explored in detail in the last part of the **Experiments** which follows.
 
 # Experiments
+## A Quick Look at the Data
+Before diving into the regression analysis, it's normally a good idea to take a look at the relationship between the variables - particularly the independent variables.  To accomplish this, the following R code utilizing the *pairs* function was used:
+```{r}
+panel.hist <- function(x) {
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(usr[1:2], 0, 1.5))
+    h <- hist(x, plot = FALSE)
+    breaks <- h$breaks; nB <- length(breaks)
+    y <- h$counts; y <-y/max(y)
+    rect(breaks[-nB], 0, breaks[-1], y, col="cyan")
+    dev.copy2eps(file="scatter2.eps")
+}
+
+panel.cor <- function(x,y,digits=4, prefix="", cex.cor) {
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0,1,0,1))
+    r <- abs(cor(x,y))
+    txt <- format(c(r, 0.123456789), digits=digits)[1]
+    txt <- paste(prefix, txt, sep="")
+    if(missing(cex.cor)) cex <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex=cex*r)
+}
+
+diag_hist <- function(y) {
+    pairs(y, diag.panel=panel.hist, upper.panel=panel.cor)
+}
+```
+This code produced the chart shown in Figure 1.
+
 
 # Results
 
