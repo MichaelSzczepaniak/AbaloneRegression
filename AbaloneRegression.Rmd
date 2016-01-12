@@ -15,6 +15,8 @@ output:
 # setwd("C:/data/dev/AbaloneRegression")  # laptop
 ```
 
+---
+\pagebreak
 
 # Introduction
 There are a number of packages in R, Python, and other languages that can perform linear regression analysis (LRA) on a given dataset.  While the use of these packages saves a data scientist or analysis quite a bit of time, it is important to do these from scratch every now and then to reenforce the concepts behind this most fundamental of machine learning algorithms.  By doing so, we deepen our intuitions that allow us to make better use of the available tools.
@@ -25,7 +27,21 @@ The analysis starts with a quick exploratory data analyisis (EDA) which begins w
 
 Following the pairs plot, the construction of the linear model was initiated by randomly partitioning the data into training and test sets. Following the data partitioning, the coefficients for the linear model were calculated for various ridge regression parameters ($\lambda$) on the training set.  The $\lambda$ which minimized the root mean square error (RMSE) was determined and then used in the model to make some predictions.
 
-The parameters for the optimized linear model was as follows: [put table output here]
+The parameters for the optimized linear model was as follows:
+
+```
+##                 weight      mean    std dev
+## bias         9.9138241 
+## male         0.4545017 0.3626571 0.48083896
+## female       0.3812974 0.3150808 0.46461756
+## Length       0.1710038 0.5244749 0.11957535
+## Diameter     0.9011211 0.4084455 0.09864034
+## Height       0.4174376 0.1398683 0.04250690
+## Whole Wgt    3.7370421 0.8300963 0.48661766
+## Shucked Wgt -4.0358844 0.3593069 0.21908767
+## Viscera Wgt -1.0573166 0.1807382 0.10868213
+## Shell Wgt    1.4083556 0.2400070 0.13945367
+```
 
 The optimized ridge regression parameter $\lambda$ was found to be 0.8. The mean and the std dev columns above were used in the standardization which will be explained in detail later.
 
@@ -146,32 +162,30 @@ With equation (@weightSolution2), we now have an expression that we can pass to 
 ## (2) Samples w/ missing data need to be removed before running this function.
 ## (3) If lambda is not passed, straight (unpenalized) linear regression is done.
 llsMakeST <- function(X, Y, lambda=0) {
-   # if X or Y come in as a list, convert it to numeric
-   X <- as.matrix(apply(X, 2, as.numeric))
-   # standardize the independent variables
-   means <- matrix(apply(X, 2, mean), ncol(X), 1)
-   stdevs <- matrix(apply(X, 2, sd), ncol(X), 1)
-   N <- nrow(X)  # number of samples
-   D <- ncol(X)  # number of parameters (dimensions)
-   Xs <- (X - matrix(rep(means, N), N, D, byrow=TRUE))/
+    # if X or Y come in as a list, convert it to numeric
+    X <- as.matrix(apply(X, 2, as.numeric))
+    # get col means and std dev to use for standardization
+    means <- matrix(apply(X, 2, mean), ncol(X), 1)
+    stdevs <- matrix(apply(X, 2, sd), ncol(X), 1)
+    N <- nrow(X)  # number of samples
+    D <- ncol(X)  # number of parameters (dimensions)
+    # standardize the train values
+    Xs <- (X - matrix(rep(means, N), N, D, byrow=TRUE))/
           matrix(rep(stdevs, N), N, D, byrow=TRUE)
-
-   Y <- as.matrix(apply(Y, 2, as.numeric))
-   # account for the bias
-   Xs1 <- cbind(1, Xs)
-   colnames(Xs1)[1] <- "bias"
-   # now solve for the weights, be sure not to penalize w0
-   w <- solve((t(Xs1) %*% Xs1)+(lam*diag(c(0,rep(1,ncol(Xs1)-1)))),
+    
+    Y <- as.matrix(apply(Y, 2, as.numeric))
+    # account for the bias
+    Xs1 <- cbind(1, Xs)
+    colnames(Xs1)[1] <- "bias"
+    # now solve for the weights, be sure not to penalize w0
+    w <- solve((t(Xs1) %*% Xs1)+(lambda*diag(c(0,rep(1,ncol(Xs1)-1)))),
                t(Xs1) %*% Y)
-   # store means & std devs along with the weights so we can properly
-   # standardize test values when we use our weights for predictions
-   meansX <- matrix(apply(cbind(1,X),2,mean),ncol(X)+1,1)
-   stdevsX <- matrix(apply(cbind(1,X),2,sd),ncol(X)+1,1)
-   w <- cbind(w, meansX)
-   w <- cbind(w, stdevsX)
-   colnames(w) <- c("weight", "mean", "std dev")
-   
-   return(w)
+    # bind the means and std dev's to be used for std'izing inputs for predictions
+    w <- cbind(w, rbind(c(NA), means))
+    w <- cbind(w, rbind(c(NA), stdevs))
+    colnames(w) <- c("weight", "mean", "std dev")
+    
+    return(w)
 }
 ```
 
@@ -196,7 +210,7 @@ llsUseST <- function(weights, X) {
    D <- ncol(X)  # number of parameters of dimensions
    means <- weights[2:nrow(weights),2]
    stdevs <- weights[2:nrow(weights),3]
-   # standardize the inputs
+   # standardize the inputs used for prediction
    Xs <- (X - matrix(rep(means, N), N, D, byrow=TRUE))/
           matrix(rep(stdevs, N), N, D, byrow=TRUE)
    
@@ -244,22 +258,23 @@ In Figure 1, the upper triangular plots were just a transposed version of the ch
 
 Dependencies among independent variables is an undesirable qulaity when doing regression analysis and we can observe some strong dependencies especially between *Length* and *Diameter*.  In the the **Results** section, we delve into this in more detail.  There also appears to be some dependencies between the different kinds of weights (Shucked, etc.), but the thickness of the scatter is greater than the thickness between *Length* and *Diameter*.
 
+```{r echo=FALSE, message=FALSE}
+abalone.converted <- convertSex()
+diag_hist(abalone.converted)
+```
+Figure 1: Scatter Plot Matrix of Abalone Data
+
 ## Most (MSFs) & Least (LSFs) Significant Factors
 For convenience, the table shown in the **Introduction** section is shown here again.
 
-```{r echo=FALSE}
-abalone.converted <- convertSex()
+```{r echo=FALSE, message=FALSE}
 train.rows <- trainSetRows(abalone.converted)
-X <- abalone.converted[train.rows,-10]
-Y <- abalone.converted[train.rows, 10]
+X <- as.matrix(abalone.converted[train.rows,-10])
+Y <- as.matrix(abalone.converted[train.rows, 10])
 abalone.wgts <- llsMakeST(X, Y)
 abalone.wgts
 ```
 
-
-```{r echo=FALSE}
-diag_hist(abalone)
-```
 
 
 # Results
