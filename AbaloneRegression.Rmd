@@ -47,6 +47,8 @@ The data was first obtained from the UCI repository[[4](https://archive.ics.uci.
 
 ```{r}
 abalone <- read.table("abalone.data", sep=',')
+names(abalone) <- c("Sex", "Length", "Diameter", "Height", "Whole Wgt",
+                    "Shucked Wgt", "Viscera Wgt", "Shell Wgt", "Rings")
 ```
 When running this command, one must make sure that the working directory is set to the same directory where the data file resides.
 
@@ -80,7 +82,7 @@ During the analysis, many iterations based on different randomly selected traini
 # fraction - fraction of the original dataset used for training
 # randomSeed - integer used to set the seed for the random number generator
 #              (used to provide reproducibility)
-trainSetRows <- function(orig, fraction, randomSeed) {
+trainSetRows <- function(orig, fraction=0.8, randomSeed=71198) {
   set.seed(randomSeed)
   randorder <- sample(nrow(orig))  # create set of randomly selected rows
   nTrain <- round(nrow(orig)*fraction) # calc # of rows in training set
@@ -173,13 +175,13 @@ llsMakeST <- function(X, Y, lambda=0) {
 }
 ```
 
-The `llsMakeST` function returns a three column vector.  In the first column are the weights as defined by $\textbf{w}$.  The second and third columns of this matrix contain the means and standard deviations of the independent variable that were used in training the model. By training, we mean solving for $\textbf{w}$.
+The `llsMakeST` function returns a three column vector.  In the first column are the weights as defined by $\textbf{w}$.  The second and third columns of this matrix contain the means and standard deviations of the independent variable that were used in training the model. By training, we mean the portion of the date used to solve for $\textbf{w}$.
 
 The second and third columns of the $\textbf{w}$ matrix are used to standardize the independent variables. Standardizing takes the following form:
 
-(@standardize) $\textbf{X}_s = \frac{(\textbf{X} - {\textbf{X}_{mean}})}{\textbf{X}_{stdev}}$
+(@standardizex) $\textbf{X}_s = \frac{(\textbf{X} - {\textbf{X}_{mean}})}{\textbf{X}_{stdev}}$
 
-In equation (@standardize), $\textbf{X}_s$ is the matrix of standardized inputs  (independent variables) and the matrices ${\textbf{X}_{mean}}$ and ${\textbf{X}_{stdev}}$ are the means and standard deviations of the inputs.  Standardization provides two advantages: (i) it allows us the ability to better account for significant difference between the regions of training and testing and (ii), it allows us to more easily compare the relative magnitude of the weights.
+In equation (@standardizex), $\textbf{X}_s$ is the matrix of standardized inputs  (independent variables) and the matrices ${\textbf{X}_{mean}}$ and ${\textbf{X}_{stdev}}$ are the means and standard deviations of the inputs.  Standardization provides two advantages: (i) it allows us the ability to better account for significant difference between the regions of training and testing and (ii), it allows us to more easily compare the relative magnitude of the weights.
 
 ## Making Predictions
 To make predictions from the `llsMakeST` weights, the `llsUseST`function was created:
@@ -206,7 +208,7 @@ llsUseST <- function(weights, X) {
 }
 ```
 
-The `llsUseST' function outputs the vector `model` which contains the model predictions for the independent variables $\textbf{X}$ that were passed in.  These predictions could then be used to evaluate RMSE which in turn allowed us to explore how $\lambda$ and training partition impacted the models accuracy.  This will be explored in detail in the last part of the **Experiments** which follows.
+The `llsUseST` function outputs the vector **`model`** which contains the model predictions for the independent variables $\textbf{X}$ that were passed in.  These predictions could then be used to evaluate RMSE which in turn allowed us to explore how $\lambda$ and training partition impacted the models accuracy.  This will be explored in detail in the last part of the **Experiments** section which follows.
 
 # Experiments
 ## A Quick Look at the Data
@@ -237,6 +239,27 @@ diag_hist <- function(y) {
 }
 ```
 This code produced the chart shown in Figure 1.
+
+In Figure 1, the upper triangular plots were just a transposed version of the charts in the lower trinagular region, so it seemed reasonable to put somethin more meaningful in this region.  In this case, the correlation coefficient between *x* (horizontal axis) *y* (vertical axis) variables were selected.  Similarly, histograms were chosen for the diagonals.
+
+Dependencies among independent variables is an undesirable qulaity when doing regression analysis and we can observe some strong dependencies especially between *Length* and *Diameter*.  In the the **Results** section, we delve into this in more detail.  There also appears to be some dependencies between the different kinds of weights (Shucked, etc.), but the thickness of the scatter is greater than the thickness between *Length* and *Diameter*.
+
+## Most (MSFs) & Least (LSFs) Significant Factors
+For convenience, the table shown in the **Introduction** section is shown here again.
+
+```{r echo=FALSE}
+abalone.converted <- convertSex()
+train.rows <- trainSetRows(abalone.converted)
+X <- abalone.converted[train.rows,-10]
+Y <- abalone.converted[train.rows, 10]
+abalone.wgts <- llsMakeST(X, Y)
+abalone.wgts
+```
+
+
+```{r echo=FALSE}
+diag_hist(abalone)
+```
 
 
 # Results
