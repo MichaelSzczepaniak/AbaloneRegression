@@ -31,7 +31,7 @@ The parameters for the optimized linear model was as follows:
 
 ```
 ##                 weight      mean    std dev
-## bias         9.9138241 
+## bias         9.9138241        NA         NA
 ## male         0.4545017 0.3626571 0.48083896
 ## female       0.3812974 0.3150808 0.46461756
 ## Length       0.1710038 0.5244749 0.11957535
@@ -256,9 +256,9 @@ This code produced the chart shown in Figure 1.
 
 In Figure 1, the upper triangular plots were just a transposed version of the charts in the lower trinagular region, so it seemed reasonable to put somethin more meaningful in this region.  In this case, the correlation coefficient between *x* (horizontal axis) *y* (vertical axis) variables were selected.  Similarly, histograms were chosen for the diagonals.
 
-Dependencies among independent variables is an undesirable qulaity when doing regression analysis and we can observe some strong dependencies especially between *Length* and *Diameter*.  In the the **Results** section, we delve into this in more detail.  There also appears to be some dependencies between the different kinds of weights (Shucked, etc.), but the thickness of the scatter is greater than the thickness between *Length* and *Diameter*.
+Because including independent variables in the regression model which have strong dependencies with other variables is an undesirable quality, we look for these dependencies in Figure 1.  In doing so, we can observe some strong dependencies between variables such as *Length* and *Diameter*.  In the the **Results** section, we delve into this in more detail.  There also appears to be some dependencies between the different kinds of weights (Shucked, etc.), but the thickness of the scatter is greater than the thickness between *Length* and *Diameter*.
 
-```{r echo=FALSE, message=FALSE}
+```{r plot1, echo=FALSE, message=FALSE}
 abalone.converted <- convertSex()
 diag_hist(abalone.converted)
 ```
@@ -275,7 +275,46 @@ abalone.wgts <- llsMakeST(X, Y)
 abalone.wgts
 ```
 
+Now we can reap the benefit of standardizing the inputs.  Since the inputs were standardized, the importance of the weights can now easily be seen.  Based on the relative magnitude of the weights, the three most significant factors are (in order of importance): bias, Whole weight and Shucked weight.
 
+The three least significant factors are: Length, F, and M.  In fact, if we removed these three factors from our model, it does not change noticeably.  The following R code was used to remove the aforementioned factors and generate the plots shown in Figure 2.
+
+```{r}
+par(mfrow = c(1,2))
+tp <- 0.5  # set training partition to be half of the dataset
+trainRows <- trainSetRows(abalone, tp)
+testRows <- testSetRows(seq(1:nrow(abalone)),trainRows)
+Xtrain <- abalone.converted[trainRows, 1:9]
+Xtrain <- as.matrix(apply(Xtrain, 2, as.numeric))
+Xtest <- abalone.converted[testRows, 1:9]
+Xtest <- as.matrix(apply(Xtest, 2, as.numeric))
+Ttrain <- abalone.converted[trainRows, 10]
+Ttrain <- as.matrix(Ttrain)
+Ttest <- abalone.converted[testRows, 10]
+Ttest <- as.matrix(Ttest)
+lambda <- 0.8
+
+w <- llsMakeST(Xtrain, Ttrain, lambda)
+Tpred <- llsUseST(w, Xtest)
+plot(Ttest, Tpred, main=c("All the Parameters",
+     "(training partition 0.5)"), xlab="Rings (actual)",
+     ylab="Rings (predicted)")
+abline(coef=c(0,1), col="red")
+legend("bottomright",c("Test vs. Prediction", "Test = Prediction"),
+        col=c("black","red"), lty=c(-1,1), pch=c(1,-1), merge = TRUE)
+
+Xtrain <- Xtrain[, 4:9]
+Xtest <- Xtest[, 4:9]
+w <- llsMakeST(Xtrain, Ttrain, lambda)
+Tpred <- llsUseST(w, Xtest)
+plot(Ttest, Tpred, main=c("LSF Variables Removed",
+     "(training partition 0.5)"), xlab="Rings (actual)",
+     ylab="Rings (predicted)")
+abline(coef=c(0,1), col="red")
+legend("bottomright", c("Test vs. Prediction", "Test = Prediction"),
+       col=c("black", "red"), lty=c(-1,1), pch=c(1,-1), merge = TRUE)
+```
+Figure 2: Model with and without the three LSFs. $\lambda = 0.8$
 
 # Results
 
