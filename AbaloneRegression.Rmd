@@ -298,7 +298,7 @@ w <- llsMakeST(Xtrain, Ttrain, lambda)
 Tpred <- llsUseST(w, Xtest)
 plot(Ttest, Tpred, main=c("All the Parameters",
      "(training partition 0.5)"), xlab="Rings (actual)",
-     ylab="Rings (predicted)")
+     ylab="Rings (predicted)", ylim=c(0, 25))
 abline(coef=c(0,1), col="red")
 legend("bottomright",c("Test vs. Prediction", "Test = Prediction"),
         col=c("black","red"), lty=c(-1,1), pch=c(1,-1), merge = TRUE)
@@ -309,12 +309,80 @@ w <- llsMakeST(Xtrain, Ttrain, lambda)
 Tpred <- llsUseST(w, Xtest)
 plot(Ttest, Tpred, main=c("LSF Variables Removed",
      "(training partition 0.5)"), xlab="Rings (actual)",
-     ylab="Rings (predicted)")
+     ylab="Rings (predicted)", ylim=c(0, 25))
 abline(coef=c(0,1), col="red")
 legend("bottomright", c("Test vs. Prediction", "Test = Prediction"),
        col=c("black", "red"), lty=c(-1,1), pch=c(1,-1), merge = TRUE)
 ```
 Figure 2: Model with and without the three LSFs. $\lambda = 0.8$
+
+The value of $\lambda$ for the plots in Figure 2 will be explained later on in this section.
+
+## Effects of Training Partition and $\lambda$
+To explore the effects of the training partition size, many plots were generated over a span of training partitions ranging from half a percent (0.005) to 90% (0.9).  From a practical standpoint, the area of most interst was when training partitions were relatively small.  This is because in reality, good data to build models upon if frequently scarce.
+
+A typical looking plot in the low training partition region would look like the plot in Figure 3.
+
+The code used to generate the plot in Figure 3 is shown here.  The functions 'llsMake' and 'llsUse' described earlier are utilized.
+
+```{r}
+# creates a 3 column dataframe - 1st col is lambdas, 2nd col is RMSE of
+# the training data, 3rd col is RMSE of testing data
+# should not be standardized before passing them in because this is done
+# within the llsMake and llsUse functions that are called within this
+# function.
+# Xtrain & Xtest are the training and test inputs respectively
+# Ytrain & Ytest are the training and test target outputs respectively
+# lambdas is a vector of lambdas which we want to test
+rmseVsLambda <- function(Xtrain, Xtest, Ytrain, Ytest, lambdas) {
+    
+    # initialize results vector which will be built in the for loop
+    results <- c()
+    # calc weights, calc model prediction, and calc rmse for each lambda
+    # append the results vector after each loop pass
+    for(lam in lambdas) {
+       # calculate the weights for a given lambda
+       w <- llsMakeST(Xtrain, Ytrain, lam)
+       pred <- llsUseST(w, Xtest)
+       results <- rbind(results, c(lam, sqrt(mean((llsUseST(w, Xtrain) - Ytrain)^2)),
+                                        sqrt(mean((pred - Ytest)^2))))
+    }
+    #results <- as.matrix(results)
+    return(as.data.frame(results))
+}
+
+trainFrac <- 0.04
+trainIndices <- trainSetRows(abalone.converted, fraction = trainFrac)
+testIndices <- testSetRows(1:length(abalone$Rings), trainIndices)
+x.train <- abalone.converted[trainIndices, 1:9]
+x.test <- abalone.converted[testIndices, 1:9]
+y.train <- matrix(data = abalone.converted[trainIndices, 10],
+                  nrow = length(abalone.converted[trainIndices, 10]))
+y.test <- matrix(data = abalone.converted[testIndices, 10],
+                 nrow = length(abalone.converted[testIndices, 10]))
+# lambda.values <- c(0.05, seq(0.1, 1, by=0.1), seq(2, 10, by=0.5), 10:25)
+lambda.values <- seq(0.01 , 10, by=0.05)
+results <- rmseVsLambda(x.train, x.test, y.train, y.test, lambda.values)
+names(results) <- c("lambda", "train", "test")
+
+plotFigure3 <- function(results) {
+    legpos <- "bottomright"
+    ylim <- range(results[, 2:ncol(results)])  # find the RMSE range
+    # override the ylim to squeeze range a bit...
+#     ylim[2] <- 2.75
+#     ylim[1] <- 1.75
+    #label <- c("RMSE vs. Lambda","training partition",tparts[1,i])
+    matplot(results[,1], results[, c("train", "test")], type="b",
+            xlab=expression(lambda), ylab="RMSE", ylim=ylim,
+            main=paste0("RMSE vs. Lambda,", " Training Set = ", trainFrac))
+    legend(legpos,c("Train", "Test"),
+           col=c("black","red"),pch=c("1", "2"), lty=c(1, 2))
+}
+
+plotFigure3(results)
+
+```
+Figure 3. Typical model behavior with sparse training data
 
 # Results
 
