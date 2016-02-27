@@ -384,6 +384,97 @@ plotFigure3(results)
 ```
 Figure 3. Typical model behavior with sparse training data
 
+In order to explore a range of training partitions, the following code was written to do a number of iterations on each training partition. This needed to be done so that we could average the results because the $RMSE$ vs. $\lambda$   curve could vary significantly within the same training partition due to the random nature of the selection of members for the training and test partitions.
+
+In order to accomplish this task, the following R function was written. This function was built from
+functions which have been described earlier:
+
+```{r}
+# Analyzes the effect of lambdas and training partition fractions (TPFs) on RMSE
+# std_data is the matrix containing the input and output param's,
+# lambdas - a vector of lambdas to test over
+# partReps - number of repetitons to be average at every (lambda, TPF)
+# outputs - a matrix were the 1st col. are the lambdas that were passed in
+# two col's are then added fro every training partition: one for the RMSE
+# (training) and one for the RMSE (testing).
+partition_exps <- function(std_data, lambdas, partReps=30) {
+    init <- matrix(0, length(lambdas), 2)  # used to initialize resultsum
+    # initialize the training set fractions
+    tsetfracs <- c(0.005,0.01,0.02,0.04,0.06,0.08,0.1,0.2,0.3)
+    # initialize the overall results with just the lambdas
+    resultall <- matrix(c(lambdas),length(lambdas),1)  # 1 col matrix of lambdas
+    colnames(resultall)[1] = "lambda"
+    # outer loop: training set partitions
+    for(tsf in tsetfracs) {
+        # cat("\ntsf =", tsf, "\n")
+        colnames(init)[1:2] <- c(paste("RMSE(trn)",tsf),
+                                 paste("RMSE(tst)",tsf))
+        resultsum <- init
+        # inner loop: 200 random iterations on each training set fraction (TSF)
+        for(parts in 1:partReps) {
+            # cat(", parts =", parts)
+            # establish the random set of training rows based on the TSF
+            trainRows <- trainSetRows(std_data, tsf)
+            # the test set was everything that wasn't the training set...
+            testRows <- testSetRows(seq(1:nrow(std_data)),trainRows)
+            # load the independent var's for training and test sets
+            Xtrain <- std_data[trainRows, 1:9]
+            Xtest <- std_data[testRows, 1:9]
+            # load the target values for training and test sets
+            Ttrain <- std_data[trainRows, 10, drop=FALSE]
+            Ttest <- std_data[testRows, 10, drop=FALSE]
+            # now calc. the results...
+            results <- rmseVsLambda(Xtrain, Xtest, Ttrain, Ttest, lambdas)
+            # tally our results
+            resultsum <- resultsum + results[,2:3]
+        }  # close inner loop
+        
+        # component division to turn resultsum into averages
+        resultavg <- resultsum / partReps
+        resultall <- cbind(resultall, resultavg)  # partition result for each lambda
+    }  # close outer loop
+    
+    resultall
+}
+
+results <- partition_exps(abalone.converted, lambda.values, 10)
+```
+
+The plotting of all 9 of these graphs together is shown in Figure 4. These graphs were scaled on both x and y axis so that they could be readily compared.  The code used to generate this figure is shown below:
+
+```{r fig.width=6, fig.height=6}
+## Plots the effect of training partition on lambda
+plot_lambda_study <- function(results) {
+tparts <- matrix(c(0.005,0.01,0.02,0.04,0.06,0.08,0.1,0.2,0.3,seq(2,18,by=2)),
+                 2,9,byrow=TRUE)
+   par(mfrow = c(3,3))  # set up output of 3x3 matplots
+   for(i in 1:9) {
+      legpos <- "bottomright"
+      if(i==1)
+         legpos <- "center"
+      traincol <- tparts[2,i]
+      testcol <- traincol + 1
+      ylim <- range(results[,2:ncol(results)])  # find the RMSE range
+      # override the ylim to squeeze range a bit...
+      ylim[2] <- 2.75
+      ylim[1] <- 1.75
+      #label <- c("RMSE vs. Lambda","training partition",tparts[1,i])
+      matplot(results[,1],as.matrix(results[,traincol:testcol]),type="b",
+         xlab=expression(lambda),
+         ylab="RMSE",
+         ylim=ylim,
+         main=paste("Training Partition", tparts[1,i]))
+      legend(legpos,c("Train", "Test"),
+         col=c("black","red"),
+         pch=c("1","2"), lty=c(1,2))
+   }
+   # dev.copy2eps(file="tparts_study3x3a.eps")
+}
+
+plot_lambda_study(results)
+```
+
+
 # Results
 
 # A Personal Curiosity: Bias and Training Partition
